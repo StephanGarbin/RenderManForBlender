@@ -27,7 +27,6 @@ import bpy
 import mathutils
 import re
 import os
-import ntpath
 import platform
 import sys
 import fnmatch
@@ -35,7 +34,7 @@ import subprocess
 from subprocess import Popen, PIPE
 from extensions_framework import util as efutil
 from mathutils import Matrix, Vector
-EnableDebugging = True
+EnableDebugging = False
 EnableRelativePaths = True
 
 class BlenderVersionError(Exception):
@@ -406,11 +405,11 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
     #print('INPUT_PATH: ', path)
     #blender filename
     blendpath = os.path.dirname(bpy.data.filepath)
-    blendFileName = os.path.splitext(os.path.split(bpy.data.filepath)[1])[0]
-
+    blendFileName = os.path.splitext(os.path.split(bpy.data.filepath)[1])[0].rstrip()
+    #print(blendpath, ',', blendFileName)
     #replace $OUT with blendpath
     if not relpath:
-        path = path.replace('$OUT', ntpath.join(blendpath, '$OUT'))
+        path = path.replace('$OUT', os.path.join(blendpath, '$OUT'))
     else:
         path = path.split('$OUT')[1]
         path= path.lstrip('/\\')
@@ -418,7 +417,7 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
         #print('PATH AFTER REPLACE: ', path)
     #print('OUT REPLACED: ', path)
     if forceAbsolute:
-        path = ntpath.join(blendpath, path)
+        path = os.path.join(blendpath, path)
     # first env vars, in case they contain special blender variables
     # recursively expand these (max 10), in case there are vars in vars
     for i in range(10):
@@ -451,7 +450,7 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
     # convert ### to frame number
     if scene is not None:
         path = make_frame_path(path, scene.frame_current)
-
+    
     #print('FINAL PATH: ', path)
     #print('-----------')
     return path
@@ -492,7 +491,7 @@ def rib_ob_bounds(ob_bb):
 
 def rib_path(path, escape_slashes=False, use_export_location_hierarchy = False):
     if use_export_location_hierarchy:
-        return path_win_to_unixy(ntpath.relpath(bpy.path.relpath(path).replace('//', '../')),
+        return path_win_to_unixy(os.path.relpath(bpy.path.relpath(path).replace('//', '../')),
                              escape_slashes=escape_slashes)
     else:
         return path_win_to_unixy(bpy.path.relpath(path),
@@ -592,6 +591,8 @@ def guess_rmantree():
         rmantree = rmantree_from_env()
     else:
         rmantree = choice
+    
+    rmantree = prefs.path_rmantree
     version = get_rman_version(rmantree)  # major, minor, mod
 
     if choice == 'NEWEST':

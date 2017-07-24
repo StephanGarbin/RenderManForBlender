@@ -133,7 +133,7 @@ class RendermanPreferences(AddonPreferences):
         name="RMANTREE Path",
         description="Path to RenderMan Pro Server installation folder",
         subtype='DIR_PATH',
-        default='')
+        default='/cs/research/vr/3dami/stephan/opt/pixar/RenderManProServer-21.4/')
     path_renderer = StringProperty(
         name="Renderer Path",
         description="Path to renderer executable",

@@ -30,7 +30,6 @@ import bgl
 import blf
 import webbrowser
 import addon_utils
-import ntpath
 from .icons.icons import load_icons
 from operator import attrgetter, itemgetter
 from bl_operators.presets import AddPresetBase
@@ -337,11 +336,11 @@ class RendermanBake(bpy.types.Operator):
             #print('BLENDPATH: ', blendpath)
             #print('ribnames: ', rib_names)
             #now we can correct all ribnames
-            stripped_rib_names = [ntpath.basename(x) for x in rib_names]
+            stripped_rib_names = [os.path.basename(x) for x in rib_names]
             #print('stripped: ', stripped_rib_names)
             def basePlusOneFolderTuple(x):
-                first = ntpath.join(ntpath.basename(ntpath.dirname(x[0])), ntpath.basename(x[0]))
-                second = ntpath.join(ntpath.basename(ntpath.dirname(x[1])), ntpath.basename(x[1]))
+                first = os.path.join(os.path.basename(os.path.dirname(x[0])), os.path.basename(x[0]))
+                second = os.path.join(os.path.basename(os.path.dirname(x[1])), os.path.basename(x[1]))
                 return (first, second)
             stripped_denoise_files = [basePlusOneFolderTuple(x) for x in denoise_files]
             #print(denoise_aov_files)
@@ -506,11 +505,11 @@ class ExternalRender(bpy.types.Operator):
                 #print('BLENDPATH: ', blendpath)
                 #print('ribnames: ', rib_names)
                 #now we can correct all ribnames
-                stripped_rib_names = [ntpath.basename(x) for x in rib_names]
+                stripped_rib_names = [os.path.basename(x) for x in rib_names]
                 #print('stripped: ', stripped_rib_names)
                 def basePlusOneFolderTuple(x):
-                    first = ntpath.join(ntpath.basename(ntpath.dirname(x[0])), ntpath.basename(x[0]))
-                    second =  ntpath.join(ntpath.basename(ntpath.dirname(x[1])), ntpath.basename(x[1]))
+                    first = os.path.join(os.path.basename(os.path.dirname(x[0])), os.path.basename(x[0]))
+                    second =  os.path.join(os.path.basename(os.path.dirname(x[1])), os.path.basename(x[1]))
                     return (first, second)
                 stripped_denoise_files = [basePlusOneFolderTuple(x) for x in denoise_files]
                 #print(denoise_aov_files)
