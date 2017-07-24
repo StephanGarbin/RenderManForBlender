@@ -323,7 +323,7 @@ class RendermanBake(bpy.types.Operator):
         denoise = False
         #if we are using relative cmds, we need to make the ribs relative here
         if EnableRelativePaths:
-            print('PROCESSING RIB PATHS')
+            #print('PROCESSING RIB PATHS')
             #find name of current scene parent directory
             blendpath = os.path.dirname(bpy.data.filepath)
             #add addon default export folder name ($OUT) to blendpath
@@ -334,11 +334,11 @@ class RendermanBake(bpy.types.Operator):
                 blendpath = os.path.expandvars(blendpath)
                 if '$' not in blendpath:
                     break
-            print('BLENDPATH: ', blendpath)
-            print('ribnames: ', rib_names)
+            #print('BLENDPATH: ', blendpath)
+            #print('ribnames: ', rib_names)
             #now we can correct all ribnames
             stripped_rib_names = [ntpath.basename(x) for x in rib_names]
-            print('stripped: ', stripped_rib_names)
+            #print('stripped: ', stripped_rib_names)
             def basePlusOneFolderTuple(x):
                 first = ntpath.join(ntpath.basename(ntpath.dirname(x[0])), ntpath.basename(x[0]))
                 second = ntpath.join(ntpath.basename(ntpath.dirname(x[1])), ntpath.basename(x[1]))
@@ -371,7 +371,7 @@ class ExternalRender(bpy.types.Operator):
 
     def gen_rib_frame(self, rpass, do_objects):
         try:
-            print('[[[ENABLED BY DEFAULT!]]]')
+            #print('[[[ENABLED BY DEFAULT!]]]')
             rpass.gen_rib(do_objects, convert_textures=True)
         except Exception as err:
             self.report({'ERROR'}, 'Rib gen error: ' + traceback.format_exc())
@@ -492,7 +492,7 @@ class ExternalRender(bpy.types.Operator):
             frame_end = scene.frame_end if rm.external_animation else scene.frame_current
             
             if EnableRelativePaths:
-                print('PROCESSING RIB PATHS')
+                #print('PROCESSING RIB PATHS')
                 #find name of current scene parent directory
                 blendpath = os.path.dirname(bpy.data.filepath)
                 #add addon default export folder name ($OUT) to blendpath
@@ -503,11 +503,11 @@ class ExternalRender(bpy.types.Operator):
                     blendpath = os.path.expandvars(blendpath)
                     if '$' not in blendpath:
                         break
-                print('BLENDPATH: ', blendpath)
-                print('ribnames: ', rib_names)
+                #print('BLENDPATH: ', blendpath)
+                #print('ribnames: ', rib_names)
                 #now we can correct all ribnames
                 stripped_rib_names = [ntpath.basename(x) for x in rib_names]
-                print('stripped: ', stripped_rib_names)
+                #print('stripped: ', stripped_rib_names)
                 def basePlusOneFolderTuple(x):
                     first = ntpath.join(ntpath.basename(ntpath.dirname(x[0])), ntpath.basename(x[0]))
                     second =  ntpath.join(ntpath.basename(ntpath.dirname(x[1])), ntpath.basename(x[1]))

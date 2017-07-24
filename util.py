@@ -403,7 +403,7 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
     if not forceAbsolute and (unsaved or not EnableRelativePaths or not path.startswith('$OUT')):
         return user_path_absolute(path, scene=scene, ob=ob, display_driver=display_driver, layer_name=layer_name, pass_name=pass_name)
 
-    print('INPUT_PATH: ', path)
+    #print('INPUT_PATH: ', path)
     #blender filename
     blendpath = os.path.dirname(bpy.data.filepath)
     blendFileName = os.path.splitext(os.path.split(bpy.data.filepath)[1])[0]
@@ -415,7 +415,7 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
         path = path.split('$OUT')[1]
         path= path.lstrip('/\\')
 
-        print('PATH AFTER REPLACE: ', path)
+        #print('PATH AFTER REPLACE: ', path)
     #print('OUT REPLACED: ', path)
     if forceAbsolute:
         path = ntpath.join(blendpath, path)
@@ -452,8 +452,8 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
     if scene is not None:
         path = make_frame_path(path, scene.frame_current)
 
-    print('FINAL PATH: ', path)
-    print('-----------')
+    #print('FINAL PATH: ', path)
+    #print('-----------')
     return path
 
 # ------------- RIB formatting Helpers -------------

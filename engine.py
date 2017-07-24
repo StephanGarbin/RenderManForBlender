@@ -329,7 +329,7 @@ class RPass:
             isProblem = True
 
     def get_denoise_names(self):
-        print('Inside Get Denoise Names: ', self.paths['render_output'])
+        #print('Inside Get Denoise Names: ', self.paths['render_output'])
         base, ext = self.paths['render_output'].rsplit('.', 1)
         # denoise data has the name .denoise.exr
         return (base + '.variance.' + 'exr', base + '.filtered.' + 'exr')
@@ -763,8 +763,8 @@ class RPass:
         pass
 
     def gen_rib(self, do_objects=True, engine=None, convert_textures=True):
-        print('GEN RIB!')
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1')
+        #print('GEN RIB!')
+        #print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1')
         rm = self.scene.renderman
         if self.scene.camera is None:
             print('ERROR: NO CAMERA!')
@@ -772,7 +772,7 @@ class RPass:
                     Cannot generate rib.")
             return
         time_start = time.time()
-        print('CONVERT TEXTURES: ', convert_textures)
+        #print('CONVERT TEXTURES: ', convert_textures)
         if convert_textures:
             self.convert_textures(get_texture_list(self.scene))
 
@@ -817,8 +817,8 @@ class RPass:
         self.ri.End()
 
     def convert_textures(self, temp_texture_list):
-        print('CONVERTING TEXTURES: ', temp_texture_list)
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        #print('CONVERTING TEXTURES: ', temp_texture_list)
+        #print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         if not os.path.exists(self.paths['texture_output']):
             os.mkdir(self.paths['texture_output'])
 

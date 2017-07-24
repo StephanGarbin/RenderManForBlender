@@ -57,7 +57,7 @@ def quote(filename):
 
 def spool_render(rman_version_short, to_render, rib_files, denoise_files, denoise_aov_files, frame_begin, frame_end=None, denoise=None, context=None,
                  job_texture_cmds=[], frame_texture_cmds={}, rpass=None,  bake=False):
-    print('RIB FILES GIVEN TO SPOOL: ', rib_files)
+    #print('RIB FILES GIVEN TO SPOOL: ', rib_files)
     prefs = bpy.context.user_preferences.addons[__package__].preferences
 
     out_dir = prefs.env_vars.out

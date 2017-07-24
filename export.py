@@ -911,7 +911,7 @@ def export_light(ri, instance, instances):
 
 
 def export_material(ri, mat, handle=None, iterate_instance=False):
-    print('export material')
+    #print('export material')
     if mat is None:
         return
     rm = mat.renderman
@@ -925,11 +925,11 @@ def export_material(ri, mat, handle=None, iterate_instance=False):
 
 
 def export_material_archive(ri, mat):
-    print('export material archive')
+    #print('export material archive')
     if mat:
-        print('export material archive')
+        #print('export material archive')
         ri.ReadArchive('material.' + get_mat_name(mat.name))
-        print('done exporting material archive')
+        #print('done exporting material archive')
 
 
 def export_motion_begin(ri, motion_data):
@@ -990,7 +990,7 @@ def geometry_source_rib(ri, scene, ob):
 
         elif rm.geometry_source == 'OPENVDB':
             openvdb_file = rib_path(replace_frame_num(rm.path_archive), use_export_location_hierarchy = True)
-            print('VDB: RIB PATH!!: ', openvdb_file)
+            #print('VDB: RIB PATH!!: ', openvdb_file)
             params = {"constant string[2] blobbydso:stringargs": [
                 openvdb_file, "density"]}
             for channel in rm.openvdb_channels:
@@ -1517,9 +1517,9 @@ def export_points(ri, scene, ob, motion):
 
 
 def export_openVDB(ri, ob):
-    print('OVDB FUNC')
+    #print('OVDB FUNC')
     cacheFile = locate_openVDB_cache(bpy.context.scene.frame_current)
-    print('OVDB CACHE: ', cacheFile)
+    #print('OVDB CACHE: ', cacheFile)
     if not cacheFile:
         debug('error', "Please save and export OpenVDB files before rendering.")
         return
@@ -2556,7 +2556,7 @@ def export_dupli_archive(ri, scene, rpass, data_block, data_blocks):
 
 # export an archive with all the materials and read it back in
 def export_materials_archive(ri, rpass, scene):
-    print('EXPORT MATERIAL ARCHIVE')
+    #print('EXPORT MATERIAL ARCHIVE')
     archive_filename = user_path(scene.renderman.path_object_archive_static,
                                  scene, relpath=False, forceAbsolute=True).replace('{object}', 'materials')
     ri.Begin(archive_filename)
