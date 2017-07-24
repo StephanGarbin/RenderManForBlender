@@ -911,6 +911,7 @@ def export_light(ri, instance, instances):
 
 
 def export_material(ri, mat, handle=None, iterate_instance=False):
+    print('export material')
     if mat is None:
         return
     rm = mat.renderman
@@ -924,8 +925,11 @@ def export_material(ri, mat, handle=None, iterate_instance=False):
 
 
 def export_material_archive(ri, mat):
+    print('export material archive')
     if mat:
+        print('export material archive')
         ri.ReadArchive('material.' + get_mat_name(mat.name))
+        print('done exporting material archive')
 
 
 def export_motion_begin(ri, motion_data):
@@ -957,7 +961,7 @@ def geometry_source_rib(ri, scene, ob):
 
     if rm.geometry_source == 'ARCHIVE':
         archive_path = \
-            rib_path(get_sequence_path(rm.path_archive, blender_frame, anim))
+            rib_path(get_sequence_path(rm.path_archive, blender_frame, anim), use_export_location_hierarchy = True)
         ri.ReadArchive(archive_path)
 
     else:
@@ -970,22 +974,23 @@ def geometry_source_rib(ri, scene, ob):
 
         if rm.geometry_source == 'DELAYED_LOAD_ARCHIVE':
             archive_path = rib_path(get_sequence_path(rm.path_archive,
-                                                      blender_frame, anim))
+                                                      blender_frame, anim), use_export_location_hierarchy = True)
             ri.Procedural("DelayedReadArchive", archive_path, rib(bounds))
 
         elif rm.geometry_source == 'PROCEDURAL_RUN_PROGRAM':
-            path_runprogram = rib_path(rm.path_runprogram)
+            path_runprogram = rib_path(rm.path_runprogram, use_export_location_hierarchy = True)
             ri.Procedural("RunProgram", [path_runprogram,
                                          rm.path_runprogram_args],
                           rib(bounds))
 
         elif rm.geometry_source == 'DYNAMIC_LOAD_DSO':
-            path_dso = rib_path(rm.path_dso)
+            path_dso = rib_path(rm.path_dso, use_export_location_hierarchy = True)
             ri.Procedural("DynamicLoad", [path_dso, rm.path_dso_initial_data],
                           rib(bounds))
 
         elif rm.geometry_source == 'OPENVDB':
-            openvdb_file = rib_path(replace_frame_num(rm.path_archive))
+            openvdb_file = rib_path(replace_frame_num(rm.path_archive), use_export_location_hierarchy = True)
+            print('VDB: RIB PATH!!: ', openvdb_file)
             params = {"constant string[2] blobbydso:stringargs": [
                 openvdb_file, "density"]}
             for channel in rm.openvdb_channels:
@@ -1512,7 +1517,9 @@ def export_points(ri, scene, ob, motion):
 
 
 def export_openVDB(ri, ob):
+    print('OVDB FUNC')
     cacheFile = locate_openVDB_cache(bpy.context.scene.frame_current)
+    print('OVDB CACHE: ', cacheFile)
     if not cacheFile:
         debug('error', "Please save and export OpenVDB files before rendering.")
         return
@@ -2165,13 +2172,6 @@ def export_instance_read_archive(ri, instance, instances, data_blocks, rpass, is
     if instance.type != 'META':
         export_transform(ri, instance, concat=is_child)
 
-    object_material = False
-    if instance.ob and instance.type == 'MESH':
-        ob = instance.ob
-        object_material = ob.active_material and ob.material_slots[ob.active_material_index].link == 'OBJECT'
-        if object_material:
-            export_material_archive(ri, ob.active_material)
-
     for db_name in instance.data_block_names:
         if db_name in data_blocks:
             if(hasattr(data_blocks[db_name].data, 'renderman')):
@@ -2179,9 +2179,9 @@ def export_instance_read_archive(ri, instance, instances, data_blocks, rpass, is
                     export_data_rib_archive(
                         ri, data_blocks[db_name], instance, rpass)
                 else:
-                    export_data_read_archive(ri, data_blocks[db_name], rpass, skip_material=object_material)
+                    export_data_read_archive(ri, data_blocks[db_name], rpass)
             else:
-                export_data_read_archive(ri, data_blocks[db_name], rpass, skip_material=object_material)
+                export_data_read_archive(ri, data_blocks[db_name], rpass)
 
         # now the children
     for child_name in instance.children:
@@ -2195,12 +2195,11 @@ def export_instance_read_archive(ri, instance, instances, data_blocks, rpass, is
     ri.AttributeEnd()
 
 
-def export_data_read_archive(ri, data_block, rpass, skip_material=False):
+def export_data_read_archive(ri, data_block, rpass):
     ri.AttributeBegin()
 
-    if not skip_material:
-        for mat in data_block.material:
-            export_material_archive(ri, mat)
+    for mat in data_block.material:
+        export_material_archive(ri, mat)
 
     archive_filename = relpath_archive(data_block.archive_filename, rpass)
 
@@ -2557,8 +2556,9 @@ def export_dupli_archive(ri, scene, rpass, data_block, data_blocks):
 
 # export an archive with all the materials and read it back in
 def export_materials_archive(ri, rpass, scene):
+    print('EXPORT MATERIAL ARCHIVE')
     archive_filename = user_path(scene.renderman.path_object_archive_static,
-                                 scene).replace('{object}', 'materials')
+                                 scene, relpath=False, forceAbsolute=True).replace('{object}', 'materials')
     ri.Begin(archive_filename)
     for mat_name, mat in bpy.data.materials.items():
         ri.ArchiveBegin('material.' + get_mat_name(mat_name))
@@ -3013,7 +3013,7 @@ def export_samplefilters(ri, rpass, scene):
                               "string source": "color lpe:holdouts;C[DS]+[LO]"})
             dspy_name = user_path(
                 addon_prefs.path_aov_image, scene=scene, display_driver=rpass.display_driver,
-                layer_name='Shadow', pass_name='Occluded')
+                layer_name='Shadow', pass_name='Occluded', relpath=True)
             ri.Display('+' + dspy_name, display_driver,
                        sf.PxrShadowFilter_settings.occludedAov, {"int asrgba": 1})
 
@@ -3021,7 +3021,7 @@ def export_samplefilters(ri, rpass, scene):
                               "string source": "color lpe:holdouts;unoccluded;C[DS]+[LO]"})
             dspy_name = user_path(
                 addon_prefs.path_aov_image, scene=scene, display_driver=rpass.display_driver,
-                layer_name='Shadow', pass_name='Unoccluded')
+                layer_name='Shadow', pass_name='Unoccluded', relpath=True)
             ri.Display('+' + dspy_name, display_driver,
                        sf.PxrShadowFilter_settings.unoccludedAov, {"int asrgba": 1})
 
@@ -3030,7 +3030,7 @@ def export_samplefilters(ri, rpass, scene):
                                   sf.PxrShadowFilter_settings.shadowAov)
                 dspy_name = user_path(
                     addon_prefs.path_aov_image, scene=scene, display_driver=rpass.display_driver,
-                    layer_name='Shadow', pass_name='ShadowOutput')
+                    layer_name='Shadow', pass_name='ShadowOutput', relpath=True)
                 ri.Display('+' + dspy_name, display_driver,
                            sf.PxrShadowFilter_settings.shadowAov, {"int asrgba": 1})
 
@@ -3134,7 +3134,7 @@ def export_display(ri, rpass, scene):
     rpass.output_files = []
     addon_prefs = get_addon_prefs()
     main_display = user_path(
-        addon_prefs.path_display_driver_image, scene=scene, display_driver=rpass.display_driver)
+        addon_prefs.path_display_driver_image, scene=scene, display_driver=rpass.display_driver, relpath=True)
     debug("info", "Main_display: " + main_display)
 
     # just going to always output rgba
@@ -3214,7 +3214,7 @@ def export_display(ri, rpass, scene):
                 if doit:
                     dspy_name = user_path(
                         addon_prefs.path_aov_image, scene=scene, display_driver=rpass.display_driver,
-                        layer_name=layer_name, pass_name=aov)
+                        layer_name=layer_name, pass_name=aov, relpath=True)
                     ri.Display('+' + dspy_name, display_driver,
                                aov, display_params)
                     rpass.output_files.append(dspy_name)
@@ -3294,7 +3294,7 @@ def export_display(ri, rpass, scene):
                     params["int asrgba"] = 1
                 dspy_name = user_path(
                     addon_prefs.path_aov_image, scene=scene, display_driver=rpass.display_driver,
-                    layer_name=layer_name, pass_name='multilayer')
+                    layer_name=layer_name, pass_name='multilayer', relpath=True)
                 ri.Display('+' + dspy_name, out_type,
                            ','.join(channels), params)
 
@@ -3313,7 +3313,7 @@ def export_display(ri, rpass, scene):
                         "int asrgba": 1} if not rm.spool_denoise_aov and not rm.enable_checkpoint else {}
                     dspy_name = user_path(
                         addon_prefs.path_aov_image, scene=scene, display_driver=rpass.display_driver,
-                        layer_name=layer_name, pass_name=aov_name)
+                        layer_name=layer_name, pass_name=aov_name, relpath=True)
                     rpass.output_files.append(dspy_name)
                     ri.Display('+' + dspy_name, display_driver,
                                aov_channel_name, params)
@@ -3551,6 +3551,7 @@ def write_archive_RIB(rpass, scene, ri, object, overridePath, exportMats, export
                 data_blocks, instances = cache_motion(
                     scene, rpass, objects=[object])
                 archivePathRIB = os.path.join(zeroFill, object.name + ".rib")
+                #print('APR: ', archivePathRIB)
                 ri.Begin(archivePathRIB)
                 if(exportMats):  # Bake in materials if asked.
                     materialsList = object.material_slots

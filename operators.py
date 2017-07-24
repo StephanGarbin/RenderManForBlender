@@ -30,6 +30,7 @@ import bgl
 import blf
 import webbrowser
 import addon_utils
+import ntpath
 from .icons.icons import load_icons
 from operator import attrgetter, itemgetter
 from bl_operators.presets import AddPresetBase
@@ -45,6 +46,7 @@ from .util import get_addon_prefs
 from .util import get_real_path
 from .util import readOSO, find_it_path, find_local_queue, find_tractor_spool
 from .util import get_Files_in_Directory
+from .util import EnableRelativePaths #[[[HACKY!!!!]]]
 
 from .export import export_archive
 from .export import get_texture_list
@@ -319,7 +321,37 @@ class RendermanBake(bpy.types.Operator):
         denoise_aov_files = []
         job_tex_cmds = []
         denoise = False
-        alf_file = spool_render(str(rm_version), to_render, [rib_names], denoise_files, denoise_aov_files, frame_begin, frame_end, denoise, context, job_texture_cmds=job_tex_cmds, frame_texture_cmds=frame_tex_cmds, rpass=rpass, bake=True)
+        #if we are using relative cmds, we need to make the ribs relative here
+        if EnableRelativePaths:
+            print('PROCESSING RIB PATHS')
+            #find name of current scene parent directory
+            blendpath = os.path.dirname(bpy.data.filepath)
+            #add addon default export folder name ($OUT) to blendpath
+            blendpath = blendpath + '\\$OUT'
+            # first env vars, in case they contain special blender variables
+            # recursively expand these (max 10), in case there are vars in vars
+            for i in range(10):
+                blendpath = os.path.expandvars(blendpath)
+                if '$' not in blendpath:
+                    break
+            print('BLENDPATH: ', blendpath)
+            print('ribnames: ', rib_names)
+            #now we can correct all ribnames
+            stripped_rib_names = [ntpath.basename(x) for x in rib_names]
+            print('stripped: ', stripped_rib_names)
+            def basePlusOneFolderTuple(x):
+                first = ntpath.join(ntpath.basename(ntpath.dirname(x[0])), ntpath.basename(x[0]))
+                second = ntpath.join(ntpath.basename(ntpath.dirname(x[1])), ntpath.basename(x[1]))
+                return (first, second)
+            stripped_denoise_files = [basePlusOneFolderTuple(x) for x in denoise_files]
+            #print(denoise_aov_files)
+            stripped_denoise_aov_files = [basePlusOneFolderTuple(x) if x else x for x in denoise_aov_files]
+            alf_file = spool_render(str(rm_version), to_render, [stripped_rib_names], stripped_denoise_files, stripped_denoise_aov_files,
+                frame_begin, frame_end, denoise, context,
+                job_texture_cmds=job_tex_cmds, frame_texture_cmds=frame_tex_cmds, rpass=rpass, bake=True)
+        else:
+            alf_file = spool_render(str(rm_version), to_render, [rib_names], denoise_files, denoise_aov_files, frame_begin, frame_end, denoise, context, job_texture_cmds=job_tex_cmds, frame_texture_cmds=frame_tex_cmds, rpass=rpass, bake=True)
+        
         exe = find_tractor_spool() if rm.queuing_system == 'tractor' else find_local_queue()
         self.report(
                     {'INFO'}, 'RenderMan Baking spooling to %s.' % rm.queuing_system)
@@ -339,7 +371,8 @@ class ExternalRender(bpy.types.Operator):
 
     def gen_rib_frame(self, rpass, do_objects):
         try:
-            rpass.gen_rib(do_objects, convert_textures=False)
+            print('[[[ENABLED BY DEFAULT!]]]')
+            rpass.gen_rib(do_objects, convert_textures=True)
         except Exception as err:
             self.report({'ERROR'}, 'Rib gen error: ' + traceback.format_exc())
 
@@ -418,7 +451,12 @@ class ExternalRender(bpy.types.Operator):
                     frame_tex_cmds[frame] = [cmd for cmd in get_texture_list(
                         rpass.scene) if cmd not in job_tex_cmds]
                 if rm.external_denoise:
-                    denoise_files.append(rpass.get_denoise_names())
+                    if EnableRelativePaths:
+                        abs_path = rpass.get_denoise_names()
+                        print('Absolute Denoise Path 1: ', abs_path)
+                        denoise_files.append(abs_path)
+                    else:
+                        denoise_files.append(abs_path)
                     if rm.spool_denoise_aov:
                         denoise_aov_files.append(
                             self.gen_denoise_aov_name(scene, rpass))
@@ -432,7 +470,12 @@ class ExternalRender(bpy.types.Operator):
             if rm.convert_textures:
                 frame_tex_cmds = {scene.frame_current: get_texture_list(scene)}
             if rm.external_denoise:
-                denoise_files.append(rpass.get_denoise_names())
+                if EnableRelativePaths:
+                    abs_path = rpass.get_denoise_names()
+                    print('Absolute Denoise Path 2: ', abs_path)
+                    denoise_files.append(abs_path)
+                else:
+                    denoise_files.append(abs_path)
                 if rm.spool_denoise_aov:
                     denoise_aov_files.append(
                         self.gen_denoise_aov_name(scene, rpass))
@@ -447,8 +490,36 @@ class ExternalRender(bpy.types.Operator):
                 denoise = 'crossframe' if rm.crossframe_denoise and scene.frame_start != scene.frame_end and rm.external_animation else 'frame'
             frame_begin = scene.frame_start if rm.external_animation else scene.frame_current
             frame_end = scene.frame_end if rm.external_animation else scene.frame_current
-            alf_file = spool_render(
-                str(rm_version), to_render, rib_names, denoise_files, denoise_aov_files, frame_begin, frame_end, denoise, context, job_texture_cmds=job_tex_cmds, frame_texture_cmds=frame_tex_cmds, rpass=rpass)
+            
+            if EnableRelativePaths:
+                print('PROCESSING RIB PATHS')
+                #find name of current scene parent directory
+                blendpath = os.path.dirname(bpy.data.filepath)
+                #add addon default export folder name ($OUT) to blendpath
+                blendpath = blendpath + '\\$OUT'
+                # first env vars, in case they contain special blender variables
+                # recursively expand these (max 10), in case there are vars in vars
+                for i in range(10):
+                    blendpath = os.path.expandvars(blendpath)
+                    if '$' not in blendpath:
+                        break
+                print('BLENDPATH: ', blendpath)
+                print('ribnames: ', rib_names)
+                #now we can correct all ribnames
+                stripped_rib_names = [ntpath.basename(x) for x in rib_names]
+                print('stripped: ', stripped_rib_names)
+                def basePlusOneFolderTuple(x):
+                    first = ntpath.join(ntpath.basename(ntpath.dirname(x[0])), ntpath.basename(x[0]))
+                    second =  ntpath.join(ntpath.basename(ntpath.dirname(x[1])), ntpath.basename(x[1]))
+                    return (first, second)
+                stripped_denoise_files = [basePlusOneFolderTuple(x) for x in denoise_files]
+                #print(denoise_aov_files)
+                stripped_denoise_aov_files = [basePlusOneFolderTuple(x) if x else x for x in denoise_aov_files]
+                alf_file = spool_render(
+                    str(rm_version), to_render, stripped_rib_names, stripped_denoise_files, stripped_denoise_aov_files, frame_begin, frame_end, denoise, context, job_texture_cmds=job_tex_cmds, frame_texture_cmds=frame_tex_cmds, rpass=rpass)
+            else:
+                alf_file = spool_render(
+                    str(rm_version), to_render, rib_names, denoise_files, denoise_aov_files, frame_begin, frame_end, denoise, context, job_texture_cmds=job_tex_cmds, frame_texture_cmds=frame_tex_cmds, rpass=rpass)
 
             # if spooling send job to queuing
             if rm.do_render:

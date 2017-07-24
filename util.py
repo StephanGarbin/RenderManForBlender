@@ -27,6 +27,7 @@ import bpy
 import mathutils
 import re
 import os
+import ntpath
 import platform
 import sys
 import fnmatch
@@ -34,8 +35,8 @@ import subprocess
 from subprocess import Popen, PIPE
 from extensions_framework import util as efutil
 from mathutils import Matrix, Vector
-EnableDebugging = False
-
+EnableDebugging = True
+EnableRelativePaths = True
 
 class BlenderVersionError(Exception):
     pass
@@ -333,8 +334,7 @@ def get_sequence_path(path, blender_frame, anim):
     frame = clamp(frame, anim.sequence_in, anim.sequence_out)
     return make_frame_path(path, frame)
 
-
-def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, pass_name=None):
+def user_path_absolute(path, scene=None, ob=None, display_driver=None, layer_name=None, pass_name=None):
     '''
     # bit more complicated system to allow accessing scene or object attributes.
     # let's stay simple for now...
@@ -396,6 +396,66 @@ def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, p
 
     return path
 
+def user_path(path, scene=None, ob=None, display_driver=None, layer_name=None, pass_name=None, forceAbsolute = False, relpath = False):
+    #fall back to the old behaviour for all things that don't actually get written to the rib
+    unsaved = True if not bpy.data.filepath else False
+    # if this file isn't saved, or we need the absolute path, we fall back to default behaviour
+    if not forceAbsolute and (unsaved or not EnableRelativePaths or not path.startswith('$OUT')):
+        return user_path_absolute(path, scene=scene, ob=ob, display_driver=display_driver, layer_name=layer_name, pass_name=pass_name)
+
+    print('INPUT_PATH: ', path)
+    #blender filename
+    blendpath = os.path.dirname(bpy.data.filepath)
+    blendFileName = os.path.splitext(os.path.split(bpy.data.filepath)[1])[0]
+
+    #replace $OUT with blendpath
+    if not relpath:
+        path = path.replace('$OUT', ntpath.join(blendpath, '$OUT'))
+    else:
+        path = path.split('$OUT')[1]
+        path= path.lstrip('/\\')
+
+        print('PATH AFTER REPLACE: ', path)
+    #print('OUT REPLACED: ', path)
+    if forceAbsolute:
+        path = ntpath.join(blendpath, path)
+    # first env vars, in case they contain special blender variables
+    # recursively expand these (max 10), in case there are vars in vars
+    for i in range(10):
+        path = os.path.expandvars(path)
+        if '$' not in path:
+            break
+    #print('BL REPLACED: ', path)
+    # first builtin special blender variables
+    path = path.replace('{blend}', blendFileName)
+    
+    if scene is not None:
+        #print('UTIL: Replacing Scene', scene)
+        path = path.replace('{scene}', scene.name)
+    
+    if display_driver is not None:
+        if display_driver == "tiff":
+            path = path.replace('{file_type}', display_driver[-4:])
+        else:
+            path = path.replace('{file_type}', display_driver[-3:])
+
+    if ob is not None:
+        path = path.replace('{object}', ob.name)
+
+    if layer_name is not None:
+        path = path.replace('{layer}', layer_name)
+
+    if pass_name is not None:
+        path = path.replace('{pass}', pass_name)
+
+    # convert ### to frame number
+    if scene is not None:
+        path = make_frame_path(path, scene.frame_current)
+
+    print('FINAL PATH: ', path)
+    print('-----------')
+    return path
+
 # ------------- RIB formatting Helpers -------------
 
 
@@ -430,8 +490,12 @@ def rib_ob_bounds(ob_bb):
             ob_bb[7][1], ob_bb[0][2], ob_bb[1][2])
 
 
-def rib_path(path, escape_slashes=False):
-    return path_win_to_unixy(bpy.path.abspath(path),
+def rib_path(path, escape_slashes=False, use_export_location_hierarchy = False):
+    if use_export_location_hierarchy:
+        return path_win_to_unixy(ntpath.relpath(bpy.path.relpath(path).replace('//', '../')),
+                             escape_slashes=escape_slashes)
+    else:
+        return path_win_to_unixy(bpy.path.relpath(path),
                              escape_slashes=escape_slashes)
 
 
