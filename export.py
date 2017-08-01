@@ -2882,13 +2882,20 @@ def export_options(ri, scene):
 
 
 def export_searchpaths(ri, paths):
+    print('EXPORT SP 1!')
     ri.Option("ribparse", {"string varsubst": ["$"]})
     ri.Option("searchpath", {"string shader": ["%s" %
                                                ':'.join(path_list_convert(paths['shader'], to_unix=True))]})
     rel_tex_paths = [os.path.relpath(path, paths['export_dir'])
                      for path in paths['texture']]
+    rel_tex_paths.append('/SAN/vr/3dami/projects/green/textures')
+    rel_tex_paths.append('/cs/research/vr/3dami/projects/green/textures')
+    rel_tex_paths.append('../../textures')
+    print('REL TEX PATHS: ', rel_tex_paths)
     ri.Option("searchpath", {"string texture": ["%s" %
                                                 ':'.join(path_list_convert(rel_tex_paths + ["@"], to_unix=True))]})
+    print('FORMATTED REL TEX PATHS: ', ["%s" %
+                                                ':'.join(path_list_convert(rel_tex_paths + ["@"], to_unix=True))])
     # ri.Option("searchpath", {"string procedural": ["%s" % \
     #    ':'.join(path_list_convert(paths['procedural'], to_unix=True))]})
     ri.Option("searchpath", {"string archive": os.path.relpath(
